@@ -10,4 +10,10 @@
 (def nike-locations (set (rest (map format/convert-nums (file/read-csv csv2)))))
 (def anomalys  (set (rest (map format/convert-nums (file/read-csv csv3)))))
 
+(defn match-events-locs [events anomalys]
+  (filter (fn [{:keys [lat lng]}]
+            (contains? anomalys [lat lng]))
+          events))
 
+;; (def bad (match-events-locs events anomalys)) # count 71048
+;; (def good (match-events-locs events nike-locations))) # count 2180
