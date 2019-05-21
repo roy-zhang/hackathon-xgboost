@@ -23,6 +23,7 @@
 ;; (def zeros (match-events-locs events #{[0 0}))) # 22984
 
 
+;; of the events in event with label 1.0, what is their lat/long
 (defn known-bad-locations [events]
   (->> events
     (filter #(= 1.0 (:label %)))
@@ -30,14 +31,40 @@
     (remove #(= [0.0 0.0] %))
     set))
 
-(def new-bad-events (match-events-locs (filter #(= 0.0 (:label %)) events)
-                                       (known-bad-locations events)))
+(defn known-bad-ips [events]
+  (->> events
+       (filter #(= 1.0 (:label %)))
+       (map #(vec (list (:ip %))))
+       set))
 
-(defn switch-label [events kids]
-  (map (fn [{:keys [kid] :as event}]
-         (if (contains? kids kid)
-           (assoc event :label 1.0)
-           event))
-       events))
+;(def new-bad-loc-events (match-events-locs (filter #(= 0.0 (:label %)) events)
+;                                           (known-bad-locations events)))
+;
+;(def new-bad-ip-events (match-events-locs (filter #(= 0.0 (:label %)) events)
+;                                          (known-bad-locations events)))
 
-(def new-events (switch-label events (set (map :kid new-bad-events))))
+;; (def new-bad-events (map #(assoc % :label 1.0) new-bad-events)) ;; change label to 1.0
+
+(defn switch-label [bad-locations events]
+  (concat (filter #(= 1.0 (:label %)) events)
+          (map (fn [event]
+                 (if (contains? bad-locations [(:lat event) (:lng event)])
+                   (assoc event :label 1.0)
+                   event))
+            (filter #(= 0.0 (:label %)) events))))
+
+(defn switch-label2 [bad-ips events]
+  (concat (filter #(= 1.0 (:label %)) events)
+          (map (fn [event]
+                 (if (contains? bad-ips (:ip event))
+                   (assoc event :label 1.0)
+                   event))
+               (filter #(= 0.0 (:label %)) events))))
+
+(def new-events (->> events
+                    (switch-label (known-bad-locations events))
+                    (switch-label2 (known-bad-ips events))))
+
+(def new-events (map #(assoc % :ets (int (:ets %))) new-events))
+
+; (file/write-csv

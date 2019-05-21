@@ -18,3 +18,9 @@
 (defn write-csv [vecvecs filename]
   (with-open [writer (io/writer filename)]
     (csv/write-csv writer vecvecs)))
+
+
+(defn write-obj-csv [obj filename]
+  (let [header (map name (keys (first obj)))
+        vecvecs (concat [header] (map vals obj))]
+    (write-csv vecvecs filename)))
